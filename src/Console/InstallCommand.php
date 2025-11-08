@@ -1,11 +1,9 @@
 <?php
 
-namespace Laravel\Sail\Console;
+namespace Sage\Sail\Console;
 
-use Illuminate\Console\Command;
-use RuntimeException;
+use Sage\Sail\Illuminate\Console\Command;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Process\Process;
 
 #[AsCommand(name: 'sage-sail:install')]
 class InstallCommand extends Command
@@ -68,9 +66,9 @@ class InstallCommand extends Command
         if (in_array('mysql', $services) ||
             in_array('mariadb', $services) ||
             in_array('pgsql', $services)) {
-            $this->components->warn('A database service was installed. Run "artisan migrate" to prepare your database:');
+            // $this->components->warn('A database service was installed. Run "artisan migrate" to prepare your database:');
 
-            $this->output->writeln('<fg=gray>➜</> <options=bold>./vendor/bin/sage sail artisan migrate</>');
+            // $this->output->writeln('<fg=gray>➜</> <options=bold>./vendor/bin/sage sail artisan migrate</>');
         }
 
         $this->output->writeln('');

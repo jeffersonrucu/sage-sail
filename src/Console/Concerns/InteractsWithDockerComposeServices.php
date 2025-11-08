@@ -110,9 +110,9 @@ trait InteractsWithDockerComposeServices
             ->filter(function ($service) {
                 return in_array($service, ['mysql', 'pgsql', 'mariadb', 'mongodb', 'redis', 'valkey', 'meilisearch', 'typesense', 'minio', 'rustfs', 'rabbitmq']);
             })->filter(function ($service) use ($compose) {
-                return ! array_key_exists($service, $compose['volumes'] ?? []);
+                return ! array_key_exists("sage-sail-{$service}", $compose['volumes'] ?? []);
             })->each(function ($service) use (&$compose) {
-                $compose['volumes']["sail-{$service}"] = ['driver' => 'local'];
+                $compose['volumes']["sage-sail-{$service}"] = ['driver' => 'local'];
             });
 
         // If the list of volumes is empty, we can remove it...
@@ -135,7 +135,14 @@ trait InteractsWithDockerComposeServices
      */
     protected function replaceEnvVariables(array $services)
     {
-        $environment = file_get_contents($this->laravel->basePath('.env'));
+        $envPath = $this->laravel->basePath('.env');
+        $defaultEnvPath = __DIR__ . '/../../../.env.example';
+
+        if (file_exists($envPath)) {
+            $environment = file_get_contents($envPath);
+        } else {
+            $environment = file_get_contents($defaultEnvPath);
+        }
 
         if (in_array('mysql', $services) ||
             in_array('mariadb', $services) ||
@@ -297,12 +304,12 @@ trait InteractsWithDockerComposeServices
 
         if (count($services) > 0) {
             $this->runCommands([
-                './vendor/bin/sage-sail pull '.implode(' ', $services),
+                __DIR__.'/../../../bin/sage-sail pull '.implode(' ', $services),
             ]);
         }
 
         $this->runCommands([
-            './vendor/bin/sage-sail build',
+            __DIR__.'/../../../bin/sage-sail build',
         ]);
     }
 

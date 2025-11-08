@@ -6,8 +6,8 @@ $projectRoot = getcwd();
 $projectAutoload = $projectRoot . '/vendor/autoload.php';
 
 if (! file_exists($projectAutoload)) {
-    echo 'Erro: Não foi possível encontrar vendor/autoload.php.' . PHP_EOL;
-    echo 'Por favor, execute este comando a partir da raiz do seu projeto Sage.' . PHP_EOL;
+    echo 'error : Autoload file not found. Please run "composer install" first.' . PHP_EOL;
+    echo 'Please run this command from the root of your Sage project.' . PHP_EOL;
     exit(1);
 }
 

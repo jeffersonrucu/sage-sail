@@ -1,12 +1,12 @@
-# For more information: https://laravel.com/docs/sail
+# For more information: https://github.com/jeffersonrucu/sage-sail
 services:
-    laravel.test:
+    sage.test:
         build:
-            context: ./vendor/laravel/sail/runtimes/{{PHP_VERSION}}
+            context: ./vendor/jeffersonrucu/sage-sail/runtimes/{{PHP_VERSION}}
             dockerfile: Dockerfile
             args:
                 WWWGROUP: '${WWWGROUP}'
-        image: sail-{{PHP_VERSION}}/app
+        image: sage-sail-{{PHP_VERSION}}/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
@@ -21,7 +21,7 @@ services:
         volumes:
             - '.:/var/www/html'
         networks:
-            - sail
+            - sage-sail
 networks:
-    sail:
+    sage-sail:
         driver: bridge

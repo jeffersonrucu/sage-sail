@@ -8,14 +8,14 @@ Only the latest major version receives security fixes.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability within Laravel, please send an email to Taylor Otwell at taylor@laravel.com. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within Laravel, please send an email to Jefferson Oliveira at jefferoidtex7@gmail.com. All security vulnerabilities will be promptly addressed.
 
 ### Public PGP Key
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: OpenPGP v2.0.8
-Comment: Report Security Vulnerabilities to taylor@laravel.com
+Comment: Report Security Vulnerabilities to jefferoidtex7@gmail.com
 
 xsFNBFugFSQBEACxEKhIY9IoJzcouVTIYKJfWFGvwFgbRjQWBiH3QdHId5vCrbWo
 s2l+4Rv03gMG+yHLJ3rWElnNdRaNdQv59+lShrZF7Bvu7Zvc0mMNmFOM/mQ/K2Lt

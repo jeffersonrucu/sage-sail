@@ -47,15 +47,15 @@ class SailServiceProvider extends ServiceProvider implements DeferrableProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__ . '/../runtimes' => $this->app->basePath('docker'),
-            ], ['sail', 'sail-docker']);
+            ], ['sage-sail', 'sail-docker']);
 
             $this->publishes([
                 __DIR__ . '/../bin/sail' => $this->app->basePath('sail'),
-            ], ['sail', 'sail-bin']);
+            ], ['sage-sail', 'sail-bin']);
 
             $this->publishes([
                 __DIR__ . '/../database' => $this->app->basePath('docker'),
-            ], ['sail', 'sail-database']);
+            ], ['sage-sail', 'sail-database']);
         }
     }
 

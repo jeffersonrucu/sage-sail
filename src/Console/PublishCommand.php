@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Laravel\Sail\Console\Concerns\InteractsWithDockerComposeServices;
 use Symfony\Component\Console\Attribute\AsCommand;
 
-#[AsCommand(name: 'sail:publish')]
+#[AsCommand(name: 'sage-sail:publish')]
 class PublishCommand extends Command
 {
     use InteractsWithDockerComposeServices;
@@ -16,14 +16,14 @@ class PublishCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'sail:publish';
+    protected $signature = 'sage-sail:publish';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Publish the Laravel Sail Docker files';
+    protected $description = 'Publish the Laravel Sage Sail Docker files';
 
     /**
      * Execute the console command.
@@ -39,13 +39,13 @@ class PublishCommand extends Command
             $this->composePath(),
             str_replace(
                 [
-                    './vendor/laravel/sail/runtimes/8.4',
-                    './vendor/laravel/sail/runtimes/8.3',
-                    './vendor/laravel/sail/runtimes/8.2',
-                    './vendor/laravel/sail/runtimes/8.1',
-                    './vendor/laravel/sail/runtimes/8.0',
-                    './vendor/laravel/sail/database/mysql',
-                    './vendor/laravel/sail/database/pgsql'
+                    './vendor/jeffersonrucu/sage-sail/runtimes/8.4',
+                    './vendor/jeffersonrucu/sage-sail/runtimes/8.3',
+                    './vendor/jeffersonrucu/sage-sail/runtimes/8.2',
+                    './vendor/jeffersonrucu/sage-sail/runtimes/8.1',
+                    './vendor/jeffersonrucu/sage-sail/runtimes/8.0',
+                    './vendor/jeffersonrucu/sage-sail/database/mysql',
+                    './vendor/jeffersonrucu/sage-sail/database/pgsql'
                 ],
                 [
                     './docker/8.4',

@@ -1,16 +1,16 @@
 {
-    "name": "laravel/sail",
-    "description": "Docker files for running a basic Laravel application.",
-    "keywords": ["laravel", "docker"],
+    "name": "jeffersonrucu/sage-sail",
+    "description": "Docker files for running a basic Roots Sage application.",
+    "keywords": ["wordpress", "roots", "sage", "sage", "docker"],
     "license": "MIT",
     "support": {
-        "issues": "https://github.com/laravel/sail/issues",
-        "source": "https://github.com/laravel/sail"
+        "issues": "https://github.com/jeffersonrucu/sage-sail/issues",
+        "source": "https://github.com/jeffersonrucu/sage-sail"
     },
     "authors": [
         {
-            "name": "Taylor Otwell",
-            "email": "taylor@laravel.com"
+            "name": "Jefferson Oliveira",
+            "email": "jefferoidtex7@gmail.com"
         }
     ],
     "require": {

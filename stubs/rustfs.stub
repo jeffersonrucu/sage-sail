@@ -15,9 +15,9 @@ rustfs:
         RUSTFS_SECRET_KEY: 'password'
         RUSTFS_LOG_LEVEL: 'info',
     volumes:
-        - 'sail-rustfs:/data'
+        - 'sage-sail-rustfs:/data'
     networks:
-        - sail
+        - sage-sail
     healthcheck:
         test:
         [

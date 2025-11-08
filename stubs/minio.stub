@@ -7,9 +7,9 @@ minio:
         MINIO_ROOT_USER: 'sail'
         MINIO_ROOT_PASSWORD: 'password'
     volumes:
-        - 'sail-minio:/data'
+        - 'sage-sail-minio:/data'
     networks:
-        - sail
+        - sage-sail
     command: minio server /data --console-address ":8900"
     healthcheck:
         test: ["CMD", "mc", "ready", "local"]

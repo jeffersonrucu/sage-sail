@@ -10,7 +10,7 @@ case "${UNAMEOUT}" in
 esac
 
 if [ "$MACHINE" == "UNKNOWN" ]; then
-    echo "Unsupported operating system [$(uname -s)]. Laravel Sail supports macOS, Linux, and Windows (WSL2)." >&2
+    echo "Unsupported operating system [$(uname -s)]. Sage Sail supports macOS, Linux, and Windows (WSL2)." >&2
 
     exit 1
 fi
@@ -30,93 +30,93 @@ fi
 
 # Function that prints the available commands...
 function display_help {
-    echo "Laravel Sail"
+    echo "Sage Sail"
     echo
     echo "${YELLOW}Usage:${NC}" >&2
-    echo "  sail COMMAND [options] [arguments]"
+    echo "  sage-sail COMMAND [options] [arguments]"
     echo
     echo "Unknown commands are passed to the docker-compose binary."
     echo
     echo "${YELLOW}docker-compose Commands:${NC}"
-    echo "  ${GREEN}sail up${NC}        Start the application"
-    echo "  ${GREEN}sail up -d${NC}     Start the application in the background"
-    echo "  ${GREEN}sail stop${NC}      Stop the application"
-    echo "  ${GREEN}sail restart${NC}   Restart the application"
-    echo "  ${GREEN}sail ps${NC}        Display the status of all containers"
+    echo "  ${GREEN}sage-sail up${NC}        Start the application"
+    echo "  ${GREEN}sage-sail up -d${NC}     Start the application in the background"
+    echo "  ${GREEN}sage-sail stop${NC}      Stop the application"
+    echo "  ${GREEN}sage-sail restart${NC}   Restart the application"
+    echo "  ${GREEN}sage-sail ps${NC}        Display the status of all containers"
     echo
     echo "${YELLOW}Artisan Commands:${NC}"
-    echo "  ${GREEN}sail artisan ...${NC}          Run an Artisan command"
-    echo "  ${GREEN}sail artisan queue:work${NC}"
+    echo "  ${GREEN}sage-sail artisan ...${NC}          Run an Artisan command"
+    echo "  ${GREEN}sage-sail artisan queue:work${NC}"
     echo
     echo "${YELLOW}PHP Commands:${NC}"
-    echo "  ${GREEN}sail php ...${NC}   Run a snippet of PHP code"
-    echo "  ${GREEN}sail php -v${NC}"
+    echo "  ${GREEN}sage-sail php ...${NC}   Run a snippet of PHP code"
+    echo "  ${GREEN}sage-sail php -v${NC}"
     echo
     echo "${YELLOW}Composer Commands:${NC}"
-    echo "  ${GREEN}sail composer ...${NC}                       Run a Composer command"
-    echo "  ${GREEN}sail composer require laravel/sanctum${NC}"
+    echo "  ${GREEN}sage-sail composer ...${NC}                       Run a Composer command"
+    echo "  ${GREEN}sage-sail composer require laravel/sanctum${NC}"
     echo
     echo "${YELLOW}Node Commands:${NC}"
-    echo "  ${GREEN}sail node ...${NC}         Run a Node command"
-    echo "  ${GREEN}sail node --version${NC}"
+    echo "  ${GREEN}sage-sail node ...${NC}         Run a Node command"
+    echo "  ${GREEN}sage-sail node --version${NC}"
     echo
     echo "${YELLOW}NPM Commands:${NC}"
-    echo "  ${GREEN}sail npm ...${NC}        Run a npm command"
-    echo "  ${GREEN}sail npx${NC}            Run a npx command"
-    echo "  ${GREEN}sail npm run prod${NC}"
+    echo "  ${GREEN}sage-sail npm ...${NC}        Run a npm command"
+    echo "  ${GREEN}sage-sail npx${NC}            Run a npx command"
+    echo "  ${GREEN}sage-sail npm run prod${NC}"
     echo
     echo "${YELLOW}PNPM Commands:${NC}"
-    echo "  ${GREEN}sail pnpm ...${NC}        Run a pnpm command"
-    echo "  ${GREEN}sail pnpx${NC}            Run a pnpx command"
-    echo "  ${GREEN}sail pnpm run prod${NC}"
+    echo "  ${GREEN}sage-sail pnpm ...${NC}        Run a pnpm command"
+    echo "  ${GREEN}sage-sail pnpx${NC}            Run a pnpx command"
+    echo "  ${GREEN}sage-sail pnpm run prod${NC}"
     echo
     echo "${YELLOW}Yarn Commands:${NC}"
-    echo "  ${GREEN}sail yarn ...${NC}        Run a Yarn command"
-    echo "  ${GREEN}sail yarn run prod${NC}"
+    echo "  ${GREEN}sage-sail yarn ...${NC}        Run a Yarn command"
+    echo "  ${GREEN}sage-sail yarn run prod${NC}"
     echo
     echo "${YELLOW}Bun Commands:${NC}"
-    echo "  ${GREEN}sail bun ...${NC}        Run a bun command"
-    echo "  ${GREEN}sail bunx${NC}           Run a bunx command"
-    echo "  ${GREEN}sail bun run prod${NC}"
+    echo "  ${GREEN}sage-sail bun ...${NC}        Run a bun command"
+    echo "  ${GREEN}sage-sail bunx${NC}           Run a bunx command"
+    echo "  ${GREEN}sage-sail bun run prod${NC}"
     echo
     echo "${YELLOW}Database Commands:${NC}"
-    echo "  ${GREEN}sail mysql${NC}     Start a MySQL CLI session within the 'mysql' container"
-    echo "  ${GREEN}sail mariadb${NC}   Start a MySQL CLI session within the 'mariadb' container"
-    echo "  ${GREEN}sail psql${NC}      Start a PostgreSQL CLI session within the 'pgsql' container"
-    echo "  ${GREEN}sail mongodb${NC}   Start a Mongo Shell session within the 'mongodb' container"
-    echo "  ${GREEN}sail redis${NC}     Start a Redis CLI session within the 'redis' container"
-    echo "  ${GREEN}sail valkey${NC}    Start a Valkey CLI session within the 'valkey' container"
+    echo "  ${GREEN}sage-sail mysql${NC}     Start a MySQL CLI session within the 'mysql' container"
+    echo "  ${GREEN}sage-sail mariadb${NC}   Start a MySQL CLI session within the 'mariadb' container"
+    echo "  ${GREEN}sage-sail psql${NC}      Start a PostgreSQL CLI session within the 'pgsql' container"
+    echo "  ${GREEN}sage-sail mongodb${NC}   Start a Mongo Shell session within the 'mongodb' container"
+    echo "  ${GREEN}sage-sail redis${NC}     Start a Redis CLI session within the 'redis' container"
+    echo "  ${GREEN}sage-sail valkey${NC}    Start a Valkey CLI session within the 'valkey' container"
     echo
     echo "${YELLOW}Debugging:${NC}"
-    echo "  ${GREEN}sail debug ...${NC}          Run an Artisan command in debug mode"
-    echo "  ${GREEN}sail debug queue:work${NC}"
+    echo "  ${GREEN}sage-sail debug ...${NC}          Run an Artisan command in debug mode"
+    echo "  ${GREEN}sage-sail debug queue:work${NC}"
     echo
     echo "${YELLOW}Running Tests:${NC}"
-    echo "  ${GREEN}sail test${NC}          Run the PHPUnit tests via the Artisan test command"
-    echo "  ${GREEN}sail phpunit ...${NC}   Run PHPUnit"
-    echo "  ${GREEN}sail pest ...${NC}      Run Pest"
-    echo "  ${GREEN}sail pint ...${NC}      Run Pint"
-    echo "  ${GREEN}sail dusk${NC}          Run the Dusk tests (Requires the laravel/dusk package)"
-    echo "  ${GREEN}sail dusk:fails${NC}    Re-run previously failed Dusk tests (Requires the laravel/dusk package)"
+    echo "  ${GREEN}sage-sail test${NC}          Run the PHPUnit tests via the Artisan test command"
+    echo "  ${GREEN}sage-sail phpunit ...${NC}   Run PHPUnit"
+    echo "  ${GREEN}sage-sail pest ...${NC}      Run Pest"
+    echo "  ${GREEN}sage-sail pint ...${NC}      Run Pint"
+    echo "  ${GREEN}sage-sail dusk${NC}          Run the Dusk tests (Requires the laravel/dusk package)"
+    echo "  ${GREEN}sage-sail dusk:fails${NC}    Re-run previously failed Dusk tests (Requires the laravel/dusk package)"
     echo
     echo "${YELLOW}Container CLI:${NC}"
-    echo "  ${GREEN}sail shell${NC}        Start a shell session within the application container"
-    echo "  ${GREEN}sail bash${NC}         Alias for 'sail shell'"
-    echo "  ${GREEN}sail root-shell${NC}   Start a root shell session within the application container"
-    echo "  ${GREEN}sail root-bash${NC}    Alias for 'sail root-shell'"
-    echo "  ${GREEN}sail tinker${NC}       Start a new Laravel Tinker session"
+    echo "  ${GREEN}sage-sail shell${NC}        Start a shell session within the application container"
+    echo "  ${GREEN}sage-sail bash${NC}         Alias for 'sage-sail shell'"
+    echo "  ${GREEN}sage-sail root-shell${NC}   Start a root shell session within the application container"
+    echo "  ${GREEN}sage-sail root-bash${NC}    Alias for 'sage-sail root-shell'"
+    echo "  ${GREEN}sage-sail tinker${NC}       Start a new Laravel Tinker session"
     echo
     echo "${YELLOW}Sharing:${NC}"
-    echo "  ${GREEN}sail share${NC}   Share the application publicly via a temporary URL"
-    echo "  ${GREEN}sail open${NC}    Open the site in your browser"
+    echo "  ${GREEN}sage-sail share${NC}   Share the application publicly via a temporary URL"
+    echo "  ${GREEN}sage-sail open${NC}    Open the site in your browser"
     echo
     echo "${YELLOW}Binaries:${NC}"
-    echo "  ${GREEN}sail bin ...${NC}   Run Composer binary scripts from the vendor/bin directory"
-    echo "  ${GREEN}sail run ...${NC}   Run a command within the application container"
+    echo "  ${GREEN}sage-sail bin ...${NC}   Run Composer binary scripts from the vendor/bin directory"
+    echo "  ${GREEN}sage-sail run ...${NC}   Run a command within the application container"
     echo
     echo "${YELLOW}Customization:${NC}"
-    echo "  ${GREEN}sail artisan sail:publish${NC}   Publish the Sail configuration files"
-    echo "  ${GREEN}sail build --no-cache${NC}       Rebuild all of the Sail containers"
+    echo "  ${GREEN}sage-sail artisan sage-sail:publish${NC}   Publish the sage-sail configuration files"
+    echo "  ${GREEN}sage-sail build --no-cache${NC}       Rebuild all of the sage-sail containers"
 
     exit 1
 }
@@ -130,7 +130,7 @@ else
     display_help
 fi
 
-# Source the ".env" file so Laravel's environment variables are available...
+# Source the ".env" file so Sage's environment variables are available...
 # shellcheck source=/dev/null
 if [ -n "$APP_ENV" ] && [ -f ./.env."$APP_ENV" ]; then
   source ./.env."$APP_ENV";
@@ -140,7 +140,7 @@ fi
 
 # Define environment variables...
 export APP_PORT=${APP_PORT:-80}
-export APP_SERVICE=${APP_SERVICE:-"laravel.test"}
+export APP_SERVICE=${APP_SERVICE:-"sage.test"}
 export APP_USER=${APP_USER:-"sail"}
 export DB_PORT=${DB_PORT:-3306}
 export WWWUSER=${WWWUSER:-$UID}
@@ -148,7 +148,7 @@ export WWWGROUP=${WWWGROUP:-$(id -g)}
 
 export SAIL_FILES=${SAIL_FILES:-""}
 export SAIL_SHARE_DASHBOARD=${SAIL_SHARE_DASHBOARD:-4040}
-export SAIL_SHARE_SERVER_HOST=${SAIL_SHARE_SERVER_HOST:-"laravel-sail.site"}
+export SAIL_SHARE_SERVER_HOST=${SAIL_SHARE_SERVER_HOST:-"sage-sail.site"}
 export SAIL_SHARE_SERVER_PORT=${SAIL_SHARE_SERVER_PORT:-8080}
 export SAIL_SHARE_SUBDOMAIN=${SAIL_SHARE_SUBDOMAIN:-""}
 export SAIL_SHARE_DOMAIN=${SAIL_SHARE_DOMAIN:-"$SAIL_SHARE_SERVER_HOST"}
@@ -156,9 +156,9 @@ export SAIL_SHARE_SERVER=${SAIL_SHARE_SERVER:-""}
 
 # Function that outputs Sail is not running...
 function sail_is_not_running {
-    echo "${BOLD}Sail is not running.${NC}" >&2
+    echo "${BOLD}Sage Sail is not running.${NC}" >&2
     echo "" >&2
-    echo "${BOLD}You may Sail using the following commands:${NC} './vendor/bin/sail up' or './vendor/bin/sail up -d'" >&2
+    echo "${BOLD}You may Sail using the following commands:${NC} './vendor/bin/sage-sail up' or './vendor/bin/sage-sail up -d'" >&2
 
     exit 1
 }
@@ -197,7 +197,7 @@ if [ -z "$SAIL_SKIP_CHECKS" ]; then
 
     # Determine if Sail is currently up...
     if "${DOCKER_COMPOSE[@]}" ps "$APP_SERVICE" 2>&1 | grep 'Exit\|exited'; then
-        echo "${BOLD}Shutting down old Sail processes...${NC}" >&2
+        echo "${BOLD}Shutting down old Sage Sail processes...${NC}" >&2
 
         "${DOCKER_COMPOSE[@]}" down > /dev/null 2>&1
 

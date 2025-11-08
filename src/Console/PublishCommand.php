@@ -2,8 +2,8 @@
 
 namespace Sage\Sail\Console;
 
-use Illuminate\Console\Command;
 use Sage\Sail\Console\Concerns\InteractsWithDockerComposeServices;
+use Sage\Sail\Illuminate\Console\Command;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'sage-sail:publish')]

@@ -6,21 +6,25 @@ $projectRoot = getcwd();
 $projectAutoload = $projectRoot . '/vendor/autoload.php';
 
 if (! file_exists($projectAutoload)) {
-    echo 'error : Autoload file not found. Please run "composer install" first.' . PHP_EOL;
+    echo 'Error : Autoload file not found. Please run "composer install" first.' . PHP_EOL;
     echo 'Please run this command from the root of your Sage project.' . PHP_EOL;
     exit(1);
 }
 
 require $projectAutoload;
 
+
 use Illuminate\Console\Application;
 use Illuminate\Events\Dispatcher;
+use Illuminate\Config\Repository;
 use Sage\Sail\ArtisanContainer;
 use Sage\Sail\Console\AddCommand;
 use Sage\Sail\Console\InstallCommand;
 use Sage\Sail\Console\PublishCommand;
 
+
 $container = new ArtisanContainer($projectRoot);
+$container->config = new Repository([]);
 
 $events = new Dispatcher($container);
 $version = '1.0.0';

@@ -4,7 +4,7 @@
 	"dockerComposeFile": [
 		"../compose.yaml"
 	],
-	"service": "laravel.test",
+	"service": "sage-sail.test",
 	"workspaceFolder": "/var/www/html",
 	"customizations": {
 		"vscode": {

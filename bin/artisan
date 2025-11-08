@@ -1,7 +1,17 @@
 #!/usr/bin/env php
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+$projectRoot = getcwd();
+
+$projectAutoload = $projectRoot . '/vendor/autoload.php';
+
+if (! file_exists($projectAutoload)) {
+    echo 'Erro: Não foi possível encontrar vendor/autoload.php.' . PHP_EOL;
+    echo 'Por favor, execute este comando a partir da raiz do seu projeto Sage.' . PHP_EOL;
+    exit(1);
+}
+
+require $projectAutoload;
 
 use Illuminate\Console\Application;
 use Illuminate\Events\Dispatcher;
@@ -10,8 +20,7 @@ use Sage\Sail\Console\AddCommand;
 use Sage\Sail\Console\InstallCommand;
 use Sage\Sail\Console\PublishCommand;
 
-// Use o novo container personalizado
-$container = new ArtisanContainer();
+$container = new ArtisanContainer($projectRoot);
 
 $events = new Dispatcher($container);
 $version = '1.0.0';

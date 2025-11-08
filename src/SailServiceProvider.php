@@ -1,12 +1,12 @@
 <?php
 
-namespace Laravel\Sail;
+namespace Sage\Sail;
 
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
-use Laravel\Sail\Console\AddCommand;
-use Laravel\Sail\Console\InstallCommand;
-use Laravel\Sail\Console\PublishCommand;
+use Sage\Sail\Console\AddCommand;
+use Sage\Sail\Console\InstallCommand;
+use Sage\Sail\Console\PublishCommand;
 
 class SailServiceProvider extends ServiceProvider implements DeferrableProvider
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Laravel\Sail\Console\Concerns;
+namespace Sage\Sail\Console\Concerns;
 
 use Symfony\Component\Process\Process;
 use Symfony\Component\Yaml\Yaml;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Laravel\Sail\Console;
+namespace Sage\Sail\Console;
 
 use Illuminate\Console\Command;
 use RuntimeException;

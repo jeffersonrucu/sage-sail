@@ -1,9 +1,9 @@
 <?php
 
-namespace Laravel\Sail\Console;
+namespace Sage\Sail\Console;
 
 use Illuminate\Console\Command;
-use Laravel\Sail\Console\Concerns\InteractsWithDockerComposeServices;
+use Sage\Sail\Console\Concerns\InteractsWithDockerComposeServices;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'sage-sail:publish')]

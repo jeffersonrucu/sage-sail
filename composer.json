@@ -30,13 +30,13 @@
     ],
     "autoload": {
         "psr-4": {
-            "Laravel\\Sail\\": "src/"
+            "Sage\\Sail\\": "src/"
         }
     },
     "extra": {
-        "laravel": {
+        "sage": {
             "providers": [
-                "Laravel\\Sail\\SailServiceProvider"
+                "Sage\\Sail\\SailServiceProvider"
             ]
         }
     },

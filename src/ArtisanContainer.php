@@ -16,9 +16,9 @@ class ArtisanContainer extends Container
     /**
      * Create a new container instance.
      */
-    public function __construct()
+    public function __construct(string $basePath)
     {
-        $this->basePath = realpath(__DIR__ . '/../');
+        $this->basePath = $basePath;
 
         static::setInstance($this);
     }

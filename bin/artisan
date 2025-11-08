@@ -1,0 +1,32 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Illuminate\Console\Application;
+use Illuminate\Events\Dispatcher;
+use Sage\Sail\ArtisanContainer;
+use Sage\Sail\Console\AddCommand;
+use Sage\Sail\Console\InstallCommand;
+use Sage\Sail\Console\PublishCommand;
+
+// Use o novo container personalizado
+$container = new ArtisanContainer();
+
+$events = new Dispatcher($container);
+$version = '1.0.0';
+$application = new Application($container, $events, $version);
+
+$installCommand = new InstallCommand();
+$installCommand->setLaravel($container);
+$application->add($installCommand);
+
+$addCommand = new AddCommand();
+$addCommand->setLaravel($container);
+$application->add($addCommand);
+
+$publishCommand = new PublishCommand();
+$publishCommand->setLaravel($container);
+$application->add($publishCommand);
+
+$application->run();

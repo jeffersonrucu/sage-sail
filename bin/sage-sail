@@ -1,0 +1,632 @@
+#!/usr/bin/env bash
+
+UNAMEOUT="$(uname -s)"
+
+# Verify operating system is supported...
+case "${UNAMEOUT}" in
+    Linux*)             MACHINE=linux;;
+    Darwin*)            MACHINE=mac;;
+    *)                  MACHINE="UNKNOWN"
+esac
+
+if [ "$MACHINE" == "UNKNOWN" ]; then
+    echo "Unsupported operating system [$(uname -s)]. Sage Sail supports macOS, Linux, and Windows (WSL2)." >&2
+
+    exit 1
+fi
+
+# Determine if stdout is a terminal...
+if test -t 1; then
+    # Determine if colors are supported...
+    ncolors=$(tput colors)
+
+    if test -n "$ncolors" && test "$ncolors" -ge 8; then
+        BOLD="$(tput bold)"
+        YELLOW="$(tput setaf 3)"
+        GREEN="$(tput setaf 2)"
+        NC="$(tput sgr0)"
+    fi
+fi
+
+# Resolve the package directory, following symlinks created by Composer...
+SCRIPT="$0"
+
+while [ -L "$SCRIPT" ]; do
+    LINK="$(readlink "$SCRIPT")"
+
+    case "$LINK" in
+        /*) SCRIPT="$LINK";;
+        *) SCRIPT="$(dirname "$SCRIPT")/$LINK";;
+    esac
+done
+
+SAGE_SAIL_DIR="$(cd "$(dirname "$SCRIPT")/.." && pwd)"
+
+# Function that prints the available commands...
+function display_help {
+    echo "Sage Sail"
+    echo
+    echo "${YELLOW}Usage:${NC}" >&2
+    echo "  sage-sail COMMAND [options] [arguments]"
+    echo
+    echo "Unknown commands are passed to the docker compose binary."
+    echo
+    echo "${YELLOW}Scaffolding Commands:${NC}"
+    echo "  ${GREEN}sage-sail install${NC}   Install the compose file and configure the environment"
+    echo "  ${GREEN}sage-sail add ...${NC}   Add a service to an existing installation"
+    echo "  ${GREEN}sage-sail publish${NC}   Publish the Docker files into the project"
+    echo
+    echo "${YELLOW}docker compose Commands:${NC}"
+    echo "  ${GREEN}sage-sail up${NC}        Start the application"
+    echo "  ${GREEN}sage-sail up -d${NC}     Start the application in the background"
+    echo "  ${GREEN}sage-sail stop${NC}      Stop the application"
+    echo "  ${GREEN}sage-sail restart${NC}   Restart the application"
+    echo "  ${GREEN}sage-sail ps${NC}        Display the status of all containers"
+    echo
+    echo "${YELLOW}WP-CLI Commands:${NC}"
+    echo "  ${GREEN}sage-sail wp ...${NC}                Run a WP-CLI command"
+    echo "  ${GREEN}sage-sail wp plugin list${NC}"
+    echo
+    echo "${YELLOW}Acorn Commands:${NC}"
+    echo "  ${GREEN}sage-sail acorn ...${NC}             Run an Acorn command"
+    echo "  ${GREEN}sage-sail acorn optimize:clear${NC}"
+    echo
+    echo "${YELLOW}PHP Commands:${NC}"
+    echo "  ${GREEN}sage-sail php ...${NC}   Run a snippet of PHP code"
+    echo "  ${GREEN}sage-sail php -v${NC}"
+    echo
+    echo "${YELLOW}Composer Commands:${NC}"
+    echo "  ${GREEN}sage-sail composer ...${NC}                  Run a Composer command"
+    echo "  ${GREEN}sage-sail composer require roots/acorn${NC}"
+    echo
+    echo "${YELLOW}CPX Commands:${NC}"
+    echo "  ${GREEN}sage-sail cpx ...${NC}                       Run a CPX command"
+    echo "  ${GREEN}sage-sail cpx php-cs-fixer fix ./app${NC}"
+    echo
+    echo "${YELLOW}Node Commands:${NC}"
+    echo "  ${GREEN}sage-sail node ...${NC}         Run a Node command"
+    echo "  ${GREEN}sage-sail node --version${NC}"
+    echo
+    echo "${YELLOW}NPM Commands:${NC}"
+    echo "  ${GREEN}sage-sail npm ...${NC}        Run a npm command"
+    echo "  ${GREEN}sage-sail npx${NC}            Run a npx command"
+    echo "  ${GREEN}sage-sail npm run build${NC}"
+    echo
+    echo "${YELLOW}PNPM Commands:${NC}"
+    echo "  ${GREEN}sage-sail pnpm ...${NC}       Run a pnpm command"
+    echo "  ${GREEN}sage-sail pnpx${NC}           Run a pnpx command"
+    echo
+    echo "${YELLOW}Yarn Commands:${NC}"
+    echo "  ${GREEN}sage-sail yarn ...${NC}       Run a Yarn command"
+    echo "  ${GREEN}sage-sail yarn run build${NC}"
+    echo
+    echo "${YELLOW}Bun Commands:${NC}"
+    echo "  ${GREEN}sage-sail bun ...${NC}        Run a bun command"
+    echo "  ${GREEN}sage-sail bunx${NC}           Run a bunx command"
+    echo
+    echo "${YELLOW}Database Commands:${NC}"
+    echo "  ${GREEN}sage-sail mysql${NC}     Start a MySQL CLI session within the 'mysql' container"
+    echo "  ${GREEN}sage-sail mariadb${NC}   Start a MySQL CLI session within the 'mariadb' container"
+    echo "  ${GREEN}sage-sail redis${NC}     Start a Redis CLI session within the 'redis' container"
+    echo "  ${GREEN}sage-sail valkey${NC}    Start a Valkey CLI session within the 'valkey' container"
+    echo
+    echo "${YELLOW}Debugging:${NC}"
+    echo "  ${GREEN}sage-sail debug ...${NC}          Run a WP-CLI command in debug mode"
+    echo
+    echo "${YELLOW}Running Tests:${NC}"
+    echo "  ${GREEN}sage-sail phpunit ...${NC}   Run PHPUnit"
+    echo "  ${GREEN}sage-sail pest ...${NC}      Run Pest"
+    echo "  ${GREEN}sage-sail pint ...${NC}      Run Pint"
+    echo
+    echo "${YELLOW}Container CLI:${NC}"
+    echo "  ${GREEN}sage-sail shell${NC}        Start a shell session within the application container"
+    echo "  ${GREEN}sage-sail bash${NC}         Alias for 'sage-sail shell'"
+    echo "  ${GREEN}sage-sail root-shell${NC}   Start a root shell session within the application container"
+    echo "  ${GREEN}sage-sail root-bash${NC}    Alias for 'sage-sail root-shell'"
+    echo
+    echo "${YELLOW}Sharing:${NC}"
+    echo "  ${GREEN}sage-sail share${NC}   Share the application publicly via a temporary URL"
+    echo "  ${GREEN}sage-sail open${NC}    Open the site in your browser"
+    echo
+    echo "${YELLOW}Binaries:${NC}"
+    echo "  ${GREEN}sage-sail bin ...${NC}   Run Composer binary scripts from the vendor/bin directory"
+    echo "  ${GREEN}sage-sail run ...${NC}   Run a command within the application container"
+    echo
+    echo "${YELLOW}Customization:${NC}"
+    echo "  ${GREEN}sage-sail publish${NC}          Publish the Sage Sail configuration files"
+    echo "  ${GREEN}sage-sail build --no-cache${NC}  Rebuild all of the Sage Sail containers"
+
+    exit 1
+}
+
+# Proxy the "help" command...
+if [ $# -gt 0 ]; then
+    if [ "$1" == "help" ] || [ "$1" == "-h" ] || [ "$1" == "-help" ] || [ "$1" == "--help" ]; then
+        display_help
+    fi
+else
+    display_help
+fi
+
+# Scaffolding commands run on the host, before any container exists...
+if [ "$1" == "install" ] || [ "$1" == "add" ] || [ "$1" == "publish" ]; then
+    exec php "$SAGE_SAIL_DIR/bin/console" "$@"
+fi
+
+# Source the ".env" file so the project's environment variables are available...
+# shellcheck source=/dev/null
+if [ -n "$WP_ENV" ] && [ -f ./.env."$WP_ENV" ]; then
+  source ./.env."$WP_ENV";
+elif [ -f ./.env ]; then
+  source ./.env;
+fi
+
+# Define environment variables...
+export APP_PORT=${APP_PORT:-80}
+export APP_SERVICE=${APP_SERVICE:-"sage.test"}
+export APP_USER=${APP_USER:-"sage"}
+export DB_PORT=${DB_PORT:-3306}
+export WWWUSER=${WWWUSER:-$UID}
+export WWWGROUP=${WWWGROUP:-$(id -g)}
+
+export SAGE_SAIL_FILES=${SAGE_SAIL_FILES:-""}
+export SAGE_SAIL_SHARE_DASHBOARD=${SAGE_SAIL_SHARE_DASHBOARD:-4040}
+export SAGE_SAIL_DOCKER_BINARY=${SAGE_SAIL_DOCKER_BINARY:-"docker"}
+
+# Function that outputs Sage Sail is not running...
+function sage_sail_is_not_running {
+    echo "${BOLD}Sage Sail is not running.${NC}" >&2
+    echo "" >&2
+    echo "${BOLD}You may start Sage Sail using the following commands:${NC} './vendor/bin/sage-sail up' or './vendor/bin/sage-sail up -d'" >&2
+
+    exit 1
+}
+
+# AI agent environment variables to forward into containers...
+AGENT_ENV_VARS=(
+    AI_AGENT
+    CLAUDECODE
+    CLAUDE_CODE
+    CURSOR_TRACE_ID
+    CURSOR_AGENT
+    GEMINI_CLI
+    CODEX_SANDBOX
+    CODEX_THREAD_ID
+    OPENCODE
+    COPILOT_CLI
+)
+
+function forward_agent_env() {
+    for VAR in "${AGENT_ENV_VARS[@]}"; do
+        if [ -n "${!VAR:-}" ]; then
+            ARGS+=(-e "${VAR}=${!VAR}")
+        fi
+    done
+}
+
+# Define Docker Compose command prefix...
+if ${SAGE_SAIL_DOCKER_BINARY} compose &> /dev/null; then
+    COMPOSE_CMD=(${SAGE_SAIL_DOCKER_BINARY} compose)
+else
+    COMPOSE_CMD=(${SAGE_SAIL_DOCKER_BINARY}-compose)
+fi
+
+if [ -n "$SAGE_SAIL_FILES" ]; then
+    # Convert SAGE_SAIL_FILES to an array...
+    IFS=':' read -ra SAGE_SAIL_FILES <<< "$SAGE_SAIL_FILES"
+
+    for FILE in "${SAGE_SAIL_FILES[@]}"; do
+        if [ -f "$FILE" ]; then
+            COMPOSE_CMD+=(-f "$FILE")
+        else
+            echo "${BOLD}Unable to find Docker Compose file: '${FILE}'${NC}" >&2
+
+            exit 1
+        fi
+    done
+fi
+
+EXEC="yes"
+
+if [ -z "$SAGE_SAIL_SKIP_CHECKS" ]; then
+    # Ensure that Docker is running...
+    if ! ${SAGE_SAIL_DOCKER_BINARY} info > /dev/null 2>&1; then
+        echo "${BOLD}Docker or Podman is not running.${NC}" >&2
+
+        exit 1
+    fi
+
+    # Determine if Sage Sail is currently up...
+    if "${COMPOSE_CMD[@]}" ps "$APP_SERVICE" 2>&1 | grep 'Exit\|exited'; then
+        echo "${BOLD}Shutting down old Sage Sail processes...${NC}" >&2
+
+        "${COMPOSE_CMD[@]}" down > /dev/null 2>&1
+
+        EXEC="no"
+    elif [ -z "$("${COMPOSE_CMD[@]}" ps -q)" ]; then
+        EXEC="no"
+    fi
+fi
+
+ARGS=()
+
+# Proxy PHP commands to the "php" binary on the application container...
+if [ "$1" == "php" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "php")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy WP-CLI commands to the "wp" binary on the application container...
+elif [ "$1" == "wp" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "wp")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy Acorn commands to the "wp acorn" command on the application container...
+elif [ "$1" == "acorn" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" wp acorn)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy the "debug" command to the "wp" binary with xdebug enabled...
+elif [ "$1" == "debug" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER" -e XDEBUG_TRIGGER=1)
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "wp")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy vendor binary commands on the application container...
+elif [ "$1" == "bin" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        CMD=$1
+        shift 1
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" ./vendor/bin/"$CMD")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy commands on the application container...
+elif [ "$1" == "run" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        CMD=$1
+        shift 1
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "$CMD")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy Composer commands to the "composer" binary on the application container...
+elif [ "$1" == "composer" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "composer")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy CPX commands to the "cpx" binary on the application container...
+elif [ "$1" == "cpx" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" "cpx")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy the "phpunit" command to "php vendor/bin/phpunit"...
+elif [ "$1" == "phpunit" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php vendor/bin/phpunit)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy the "pest" command to "php vendor/bin/pest"...
+elif [ "$1" == "pest" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php vendor/bin/pest)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy the "pint" command to "php vendor/bin/pint"...
+elif [ "$1" == "pint" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" php vendor/bin/pint)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy Node commands to the "node" binary on the application container...
+elif [ "$1" == "node" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" node)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy NPM commands to the "npm" binary on the application container...
+elif [ "$1" == "npm" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" npm)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy NPX commands to the "npx" binary on the application container...
+elif [ "$1" == "npx" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" npx)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy PNPM commands to the "pnpm" binary on the application container...
+elif [ "$1" == "pnpm" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" pnpm)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy PNPX commands to the "pnpx" binary on the application container...
+elif [ "$1" == "pnpx" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" pnpx)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy Yarn commands to the "yarn" binary on the application container...
+elif [ "$1" == "yarn" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" yarn)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy Bun commands to the "bun" binary on the application container...
+elif [ "$1" == "bun" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" bun)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Proxy Bun X commands to the "bunx" binary on the application container...
+elif [ "$1" == "bunx" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" bunx)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Initiate a MySQL CLI terminal session within the "mysql" container...
+elif [ "$1" == "mysql" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec)
+        [ ! -t 0 ] && ARGS+=(-T)
+        ARGS+=(mysql bash -c)
+        ARGS+=("MYSQL_PWD=\${MYSQL_PASSWORD} mysql -u \${MYSQL_USER} \${MYSQL_DATABASE} \${MYSQL_EXTRA_OPTIONS}")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Initiate a MySQL CLI terminal session within the "mariadb" container...
+elif [ "$1" == "mariadb" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec)
+        [ ! -t 0 ] && ARGS+=(-T)
+        ARGS+=(mariadb bash -c)
+        ARGS+=("MYSQL_PWD=\${MYSQL_PASSWORD} mariadb -u \${MYSQL_USER} \${MYSQL_DATABASE}")
+    else
+        sage_sail_is_not_running
+    fi
+
+# Initiate a Redis CLI terminal session within the "redis" container...
+elif [ "$1" == "redis" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec)
+        [ ! -t 0 ] && ARGS+=(-T)
+        ARGS+=(redis redis-cli)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Initiate a Valkey CLI terminal session within the "valkey" container...
+elif [ "$1" == "valkey" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec)
+        [ ! -t 0 ] && ARGS+=(-T)
+        ARGS+=(valkey valkey-cli)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Initiate a Bash shell within the application container...
+elif [ "$1" == "shell" ] || [ "$1" == "bash" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u "$APP_USER")
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" bash)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Initiate a root user Bash shell within the application container...
+elif [ "$1" == "root-shell" ] || [ "$1" == "root-bash" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        ARGS+=(exec -u root)
+        [ ! -t 0 ] && ARGS+=(-T)
+        forward_agent_env
+        ARGS+=("$APP_SERVICE" bash)
+    else
+        sage_sail_is_not_running
+    fi
+
+# Share the site...
+elif [ "$1" == "share" ]; then
+    shift 1
+
+    if [ "$EXEC" == "yes" ]; then
+        SHARE_ARGS=()
+
+        [ -n "$SAGE_SAIL_SHARE_SERVER_HOST" ] && SHARE_ARGS+=(--server-host="$SAGE_SAIL_SHARE_SERVER_HOST")
+        [ -n "$SAGE_SAIL_SHARE_SERVER_PORT" ] && SHARE_ARGS+=(--server-port="$SAGE_SAIL_SHARE_SERVER_PORT")
+        [ -n "$SAGE_SAIL_SHARE_TOKEN" ] && SHARE_ARGS+=(--auth="$SAGE_SAIL_SHARE_TOKEN")
+        [ -n "$SAGE_SAIL_SHARE_SERVER" ] && SHARE_ARGS+=(--server="$SAGE_SAIL_SHARE_SERVER")
+        [ -n "$SAGE_SAIL_SHARE_SUBDOMAIN" ] && SHARE_ARGS+=(--subdomain="$SAGE_SAIL_SHARE_SUBDOMAIN")
+        [ -n "$SAGE_SAIL_SHARE_DOMAIN" ] && SHARE_ARGS+=(--domain="$SAGE_SAIL_SHARE_DOMAIN")
+
+        ${SAGE_SAIL_DOCKER_BINARY} run --init --rm --add-host=host.docker.internal:host-gateway \
+            -p "$SAGE_SAIL_SHARE_DASHBOARD":4040 -t beyondcodegmbh/expose-server:latest \
+            share http://host.docker.internal:"$APP_PORT" "${SHARE_ARGS[@]}" "$@"
+
+        exit
+    else
+        sage_sail_is_not_running
+    fi
+
+# Open the site...
+elif [ "$1" == "open" ]; then
+    shift 1
+
+    if command -v open &>/dev/null; then
+        OPEN="open"
+    elif command -v xdg-open &>/dev/null; then
+        OPEN="xdg-open"
+    else
+        echo "Neither open nor xdg-open is available. Exiting."
+        exit 1
+    fi
+
+    if [ "$EXEC" == "yes" ]; then
+        if [[ -n "$APP_PORT" && "$APP_PORT" != "80" ]]; then
+            FULL_URL="${WP_HOME}:${APP_PORT}"
+        else
+            FULL_URL="$WP_HOME"
+        fi
+
+        $OPEN "$FULL_URL"
+
+        exit
+    else
+        sage_sail_is_not_running
+    fi
+fi
+
+# Run Docker Compose with the defined arguments...
+"${COMPOSE_CMD[@]}" "${ARGS[@]}" "$@"

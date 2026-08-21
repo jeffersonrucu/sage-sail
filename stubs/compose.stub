@@ -1,12 +1,12 @@
-# For more information: https://laravel.com/docs/sail
+# For more information: https://github.com/jeffersonrucu/sage-sail
 services:
-    laravel.test:
+    sage.test:
         build:
-            context: ./vendor/laravel/sail/runtimes/{{PHP_VERSION}}
+            context: ./vendor/jeffersonrucu/sage-sail/runtimes/{{PHP_VERSION}}
             dockerfile: Dockerfile
             args:
                 WWWGROUP: '${WWWGROUP}'
-        image: sail-{{PHP_VERSION}}/app
+        image: sage-sail-{{PHP_VERSION}}/app
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
@@ -14,14 +14,14 @@ services:
             - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
         environment:
             WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            SAGE_SAIL: 1
+            WEB_ROOT: '${WEB_ROOT:-/var/www/html/web}'
+            XDEBUG_MODE: '${SAGE_SAIL_XDEBUG_MODE:-off}'
+            XDEBUG_CONFIG: '${SAGE_SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
         volumes:
             - '.:/var/www/html'
         networks:
-            - sail
+            - sage-sail
 networks:
-    sail:
+    sage-sail:
         driver: bridge

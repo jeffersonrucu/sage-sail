@@ -1,69 +1,85 @@
 <?php
 
-namespace Laravel\Sail\Console;
+namespace Sage\Sail\Console;
 
-use Illuminate\Console\Command;
-use Laravel\Sail\Console\Concerns\InteractsWithDockerComposeServices;
+use FilesystemIterator;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'sail:publish')]
+#[AsCommand(name: 'publish', description: 'Publish the Sage Sail Docker files into the project')]
 class PublishCommand extends Command
 {
-    use InteractsWithDockerComposeServices;
-
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'sail:publish';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Publish the Laravel Sail Docker files';
-
-    /**
-     * Execute the console command.
-     *
-     * @return void
-     */
-    public function handle()
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->call('vendor:publish', ['--tag' => 'sail-docker']);
-        $this->call('vendor:publish', ['--tag' => 'sail-database']);
+        $packagePath = dirname(__DIR__, 2);
+        $replacements = [];
 
-        $composePath = $this->composePath();
+        foreach (['runtimes', 'database'] as $group) {
+            foreach (glob($packagePath . '/' . $group . '/*', GLOB_ONLYDIR) ?: [] as $source) {
+                $name = basename($source);
 
-        file_put_contents(
-            $composePath,
-            str_replace(
-                [
-                    './vendor/laravel/sail/runtimes/8.5',
-                    './vendor/laravel/sail/runtimes/8.4',
-                    './vendor/laravel/sail/runtimes/8.3',
-                    './vendor/laravel/sail/runtimes/8.2',
-                    './vendor/laravel/sail/runtimes/8.1',
-                    './vendor/laravel/sail/runtimes/8.0',
-                    './vendor/laravel/sail/database/mariadb',
-                    './vendor/laravel/sail/database/mysql',
-                    './vendor/laravel/sail/database/pgsql'
-                ],
-                [
-                    './docker/8.5',
-                    './docker/8.4',
-                    './docker/8.3',
-                    './docker/8.2',
-                    './docker/8.1',
-                    './docker/8.0',
-                    './docker/mariadb',
-                    './docker/mysql',
-                    './docker/pgsql'
-                ],
-                file_get_contents($composePath)
-            )
+                $this->copyDirectory($source, $this->project->path('docker/' . $name));
+
+                $replacements['./vendor/jeffersonrucu/sage-sail/' . $group . '/' . $name] = './docker/' . $name;
+            }
+        }
+
+        $this->rewriteComposePaths($replacements);
+
+        $this->io->success('Sage Sail Docker files published to the "docker" directory.');
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param  array<string, string>  $replacements
+     */
+    private function rewriteComposePaths(array $replacements): void
+    {
+        $composePath = $this->project->composePath();
+
+        if (! is_file($composePath)) {
+            $this->io->warning('No compose file was found, so its build paths were left untouched.');
+
+            return;
+        }
+
+        file_put_contents($composePath, str_replace(
+            array_keys($replacements),
+            array_values($replacements),
+            (string) file_get_contents($composePath)
+        ));
+    }
+
+    private function copyDirectory(string $source, string $destination): void
+    {
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $items = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST
         );
+
+        foreach ($items as $item) {
+            $target = $destination . DIRECTORY_SEPARATOR . $items->getSubPathname();
+
+            if ($item->isDir()) {
+                if (! is_dir($target)) {
+                    mkdir($target, 0755, true);
+                }
+
+                continue;
+            }
+
+            copy($item->getPathname(), $target);
+
+            // Entrypoint scripts must stay executable inside the container...
+            chmod($target, $item->isExecutable() ? 0755 : 0644);
+        }
     }
 }

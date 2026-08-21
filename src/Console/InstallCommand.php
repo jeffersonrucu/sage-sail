@@ -1,78 +1,132 @@
 <?php
 
-namespace Laravel\Sail\Console;
+namespace Sage\Sail\Console;
 
-use Illuminate\Console\Command;
-use RuntimeException;
+use Sage\Sail\Environment;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Process\Process;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'sail:install')]
+#[AsCommand(name: 'install', description: 'Install the Sage Sail Docker Compose file')]
 class InstallCommand extends Command
 {
     use Concerns\InteractsWithDockerComposeServices;
 
     /**
-     * The name and signature of the console command.
+     * The WordPress secrets Bedrock expects to find in the environment.
      *
-     * @var string
+     * @var array<int, string>
      */
-    protected $signature = 'sail:install
-                {--with= : The services that should be included in the installation}
-                {--devcontainer : Create a .devcontainer configuration directory}
-                {--php=8.5 : The PHP version that should be used}';
+    private const SALTS = [
+        'AUTH_KEY',
+        'SECURE_AUTH_KEY',
+        'LOGGED_IN_KEY',
+        'NONCE_KEY',
+        'AUTH_SALT',
+        'SECURE_AUTH_SALT',
+        'LOGGED_IN_SALT',
+        'NONCE_SALT',
+    ];
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Install Laravel Sail\'s default Docker Compose file';
-
-    /**
-     * Execute the console command.
-     *
-     * @return int|null
-     */
-    public function handle()
+    protected function configure(): void
     {
-        if ($this->option('with')) {
-            $services = $this->option('with') == 'none' ? [] : explode(',', $this->option('with'));
-        } elseif ($this->option('no-interaction')) {
-            $services = $this->defaultServices;
-        } else {
-            $services = $this->gatherServicesInteractively();
+        $this
+            ->addOption('with', null, InputOption::VALUE_REQUIRED, 'The services that should be included in the installation')
+            ->addOption('php', null, InputOption::VALUE_REQUIRED, 'The PHP version that should be used', '8.4')
+            ->addOption('devcontainer', null, InputOption::VALUE_NONE, 'Create a .devcontainer configuration directory')
+            ->addOption('no-build', null, InputOption::VALUE_NONE, 'Skip pulling and building the Docker images');
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        if (! $this->project->isBedrock()) {
+            $this->io->warning('This does not look like a Bedrock project. Run this command from the Bedrock root directory.');
         }
 
-        if ($invalidServices = array_diff($services, $this->services)) {
-            $this->components->error('Invalid services ['.implode(',', $invalidServices).'].');
+        $services = $this->resolveServices($input);
 
-            return 1;
+        if ($invalid = array_diff($services, $this->services)) {
+            $this->io->error('Invalid services [' . implode(', ', $invalid) . '].');
+
+            return self::FAILURE;
         }
 
-        $this->buildDockerCompose($services);
-        $this->replaceEnvVariables($services);
-        $this->configurePhpUnit();
+        $this->buildDockerCompose($services, $input->getOption('php'));
+        $this->configureEnvironment($services);
+        $this->configureWordPress();
 
-        if ($this->option('devcontainer')) {
+        if ($input->getOption('devcontainer')) {
             $this->installDevContainer();
         }
 
-        $this->prepareInstallation($services);
-
-        $this->output->writeln('');
-        $this->components->info('Sail scaffolding installed successfully. You may run your Docker containers using Sail\'s "up" command.');
-
-        $this->output->writeln('<fg=gray>➜</> <options=bold>./vendor/bin/sail up</>');
-
-        if (in_array('mysql', $services) ||
-            in_array('mariadb', $services) ||
-            in_array('pgsql', $services)) {
-            $this->components->warn('A database service was installed. Run "artisan migrate" to prepare your database:');
-
-            $this->output->writeln('<fg=gray>➜</> <options=bold>./vendor/bin/sail artisan migrate</>');
+        if (! $input->getOption('no-build')) {
+            $this->prepareInstallation($services);
         }
 
-        $this->output->writeln('');
+        $this->io->success('Sage Sail scaffolding installed successfully.');
+        $this->io->writeln('  Start your containers with: <options=bold>./vendor/bin/sage-sail up -d</>');
+        $this->io->writeln('  Then install WordPress with: <options=bold>./vendor/bin/sage-sail wp core install --help</>');
+        $this->io->newLine();
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveServices(InputInterface $input): array
+    {
+        $with = $input->getOption('with');
+
+        if ($with !== null) {
+            return $with === 'none' ? [] : explode(',', $with);
+        }
+
+        return $input->isInteractive() ? $this->gatherServicesInteractively() : $this->defaultServices;
+    }
+
+    /**
+     * Set the WordPress URLs and generate any missing secrets.
+     */
+    private function configureWordPress(): void
+    {
+        $envPath = $this->project->envPath();
+
+        if ($envPath === null) {
+            return;
+        }
+
+        $env = new Environment($envPath);
+
+        $env->set('WP_ENV', 'development');
+        $env->set('WP_HOME', 'http://localhost');
+        $env->set('WP_SITEURL', '${WP_HOME}/wp');
+
+        foreach (self::SALTS as $salt) {
+            $current = $env->get($salt);
+
+            // Bedrock ships these as the "generateme" placeholder...
+            if ($current === null || $current === '' || $current === 'generateme') {
+                $env->set($salt, $this->generateSalt());
+            }
+        }
+
+        $env->save();
+    }
+
+    /**
+     * Quote characters are excluded so the value stays safe to embed in a dotenv file.
+     */
+    private function generateSalt(): string
+    {
+        $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#%^&*()-_=+[]{}<>.,:;/|~';
+        $salt = '';
+
+        for ($i = 0; $i < 64; $i++) {
+            $salt .= $alphabet[random_int(0, strlen($alphabet) - 1)];
+        }
+
+        return $salt;
     }
 }

@@ -1,0 +1,36 @@
+#!/usr/bin/env php
+<?php
+
+$autoloaded = false;
+
+// The package may be installed as a dependency or checked out standalone...
+foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $autoload) {
+    if (file_exists($autoload)) {
+        require $autoload;
+
+        $autoloaded = true;
+
+        break;
+    }
+}
+
+if (! $autoloaded) {
+    fwrite(STDERR, 'Unable to locate the Composer autoloader. Run "composer install" first.' . PHP_EOL);
+
+    exit(1);
+}
+
+use Sage\Sail\Console\AddCommand;
+use Sage\Sail\Console\InstallCommand;
+use Sage\Sail\Console\PublishCommand;
+use Symfony\Component\Console\Application;
+
+$application = new Application('Sage Sail', '1.0.0-dev');
+
+$application->addCommands([
+    new InstallCommand(),
+    new AddCommand(),
+    new PublishCommand(),
+]);
+
+$application->run();

@@ -1,5 +1,9 @@
 The MIT License (MIT)
 
+Copyright (c) Jefferson Oliveira
+
+This project is derived from Laravel Sail:
+
 Copyright (c) Taylor Otwell  
 Copyright (c) Chris Fidao
 

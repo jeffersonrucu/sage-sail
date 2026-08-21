@@ -3,7 +3,6 @@ name: static analysis
 on:
   push:
     branches:
-      - master
       - '*.x'
   pull_request:
 
@@ -11,5 +10,26 @@ permissions:
   contents: read
 
 jobs:
-  tests:
-    uses: laravel/.github/.github/workflows/static-analysis.yml@9c15e86fffce728fb6c50ebeae24fd63e98f4d1d # main
+  phpstan:
+    runs-on: ubuntu-latest
+
+    name: PHPStan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: 8.4
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress

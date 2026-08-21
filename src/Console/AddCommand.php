@@ -1,60 +1,72 @@
 <?php
 
-namespace Laravel\Sail\Console;
+namespace Sage\Sail\Console;
 
-use Illuminate\Console\Command;
-use Laravel\Sail\Console\Concerns\InteractsWithDockerComposeServices;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
-#[AsCommand(name: 'sail:add')]
+#[AsCommand(name: 'add', description: 'Add a service to an existing Sage Sail installation')]
 class AddCommand extends Command
 {
-    use InteractsWithDockerComposeServices;
+    use Concerns\InteractsWithDockerComposeServices;
 
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'sail:add
-        {services? : The services that should be added}
-    ';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Add a service to an existing Sail installation';
-
-    /**
-     * Execute the console command.
-     *
-     * @return int|null
-     */
-    public function handle()
+    protected function configure(): void
     {
-        if ($this->argument('services')) {
-            $services = $this->argument('services') == 'none' ? [] : explode(',', $this->argument('services'));
-        } elseif ($this->option('no-interaction')) {
-            $services = $this->defaultServices;
-        } else {
-            $services = $this->gatherServicesInteractively();
+        $this
+            ->addArgument('services', InputArgument::OPTIONAL, 'The services that should be added')
+            ->addOption('no-build', null, InputOption::VALUE_NONE, 'Skip pulling and building the Docker images');
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $services = $this->resolveServices($input);
+
+        if ($invalid = array_diff($services, $this->services)) {
+            $this->io->error('Invalid services [' . implode(', ', $invalid) . '].');
+
+            return self::FAILURE;
         }
 
-        if ($invalidServices = array_diff($services, $this->services)) {
-            $this->components->error('Invalid services ['.implode(',', $invalidServices).'].');
-
-            return 1;
+        $this->buildDockerCompose($services, $this->installedPhpVersion());
+        $this->configureEnvironment($services);
+        if (! $input->getOption('no-build')) {
+            $this->prepareInstallation($services);
         }
 
-        $this->buildDockerCompose($services);
-        $this->replaceEnvVariables($services);
-        $this->configurePhpUnit();
+        $this->io->success('Additional Sage Sail services installed successfully.');
 
-        $this->prepareInstallation($services);
+        return self::SUCCESS;
+    }
 
-        $this->output->writeln('');
-        $this->components->info('Additional Sail services installed successfully.');
+    /**
+     * @return array<int, string>
+     */
+    private function resolveServices(InputInterface $input): array
+    {
+        $services = $input->getArgument('services');
+
+        if ($services !== null) {
+            return $services === 'none' ? [] : explode(',', $services);
+        }
+
+        return $input->isInteractive() ? $this->gatherServicesInteractively() : $this->defaultServices;
+    }
+
+    /**
+     * Read the PHP version already referenced by the compose file so it is not rewritten.
+     */
+    private function installedPhpVersion(): string
+    {
+        $composePath = $this->project->composePath();
+
+        if (is_file($composePath) &&
+            preg_match('#runtimes/(\d+\.\d+)#', (string) file_get_contents($composePath), $matches) === 1) {
+            return $matches[1];
+        }
+
+        return '8.4';
     }
 }

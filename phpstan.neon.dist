@@ -1,5 +1,6 @@
 parameters:
   paths:
     - src
+    - bin/console
 
-  level: 0
+  level: 8

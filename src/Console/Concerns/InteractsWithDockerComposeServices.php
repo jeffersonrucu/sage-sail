@@ -107,6 +107,10 @@ trait InteractsWithDockerComposeServices
         'rabbitmq' => [
             'RABBITMQ_HOST' => 'rabbitmq',
             'RABBITMQ_PORT' => '5672',
+            'RABBITMQ_USER' => 'sage',
+            'RABBITMQ_PASSWORD' => 'password',
+            'RABBITMQ_VHOST' => '/',
+            'RABBITMQ_QUEUE' => 'default',
         ],
         'soketi' => [
             'PUSHER_HOST' => 'soketi',

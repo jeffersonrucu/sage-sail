@@ -32,10 +32,12 @@ composer require jeffersonrucu/sage-sail --dev
 
 That single command takes the project from checked out to running. It writes a
 `compose.yaml`, points your `.env` at the selected services, generates any missing
-WordPress salts, builds the images, starts the containers, and installs WordPress with
-WP-CLI. It finishes by printing your site URL and admin credentials.
+WordPress salts, builds the images, starts the containers, installs WordPress with
+WP-CLI, and installs a Sage theme with its assets built. It finishes by printing your
+site URL, admin credentials, and theme.
 
-You are asked for the services and the administrator details, or you can pass them:
+You are asked for the services, the administrator details, and the theme name, or you
+can pass them:
 
 ```bash
 ./vendor/bin/sage-sail install \
@@ -45,16 +47,32 @@ You are asked for the services and the administrator details, or you can pass th
     --admin-user=admin \
     --admin-password=password \
     --admin-email=admin@example.com \
+    --theme=sage \
     --no-interaction
 ```
 
-Re-running `install` is safe: an already installed WordPress is detected and left alone.
+Re-running `install` is safe: an already installed WordPress is detected and left alone,
+and an existing theme directory is never overwritten.
+
+### The Sage theme
+
+`install` creates the theme with `composer create-project roots/sage`, activates it, and
+runs `npm install && npm run build` inside the container, so the site renders styled on
+the first request. Leave the theme prompt empty to skip it.
+
+Afterwards, work on it through the container:
+
+```bash
+./vendor/bin/sage-sail acorn optimize:clear
+./vendor/bin/sage-sail run bash -c 'cd web/app/themes/sage && npm run dev'
+```
 
 | Option | Effect |
 | --- | --- |
 | `--with=mysql,redis` | Services to install. `--with=none` installs no services |
 | `--php=8.4` | PHP version, one of `8.2`, `8.3`, `8.4`, `8.5` |
 | `--title`, `--admin-user`, `--admin-password`, `--admin-email` | WordPress administrator details |
+| `--theme=sage` | Sage theme to install into `web/app/themes`. Omitted without interaction, no theme is installed |
 | `--devcontainer` | Also write a `.devcontainer` directory |
 | `--no-build` | Do not pull or build the images |
 | `--no-start` | Do not start the containers or install WordPress |

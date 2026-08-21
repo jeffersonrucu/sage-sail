@@ -31,6 +31,13 @@ class InstallCommand extends Command
         'NONCE_SALT',
     ];
 
+    /**
+     * @var array{0: string, 1: string}|null
+     */
+    private ?array $administrator = null;
+
+    private ?string $theme = null;
+
     protected function configure(): void
     {
         $this
@@ -42,7 +49,8 @@ class InstallCommand extends Command
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'The WordPress site title')
             ->addOption('admin-user', null, InputOption::VALUE_REQUIRED, 'The WordPress administrator username', 'admin')
             ->addOption('admin-password', null, InputOption::VALUE_REQUIRED, 'The WordPress administrator password', 'password')
-            ->addOption('admin-email', null, InputOption::VALUE_REQUIRED, 'The WordPress administrator email address', 'admin@example.com');
+            ->addOption('admin-email', null, InputOption::VALUE_REQUIRED, 'The WordPress administrator email address', 'admin@example.com')
+            ->addOption('theme', null, InputOption::VALUE_REQUIRED, 'Name of the Sage theme to install and activate');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -154,32 +162,34 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        return $this->installWordPress($input, $services);
-    }
-
-    /**
-     * @param  array<int, string>  $services
-     */
-    private function installWordPress(InputInterface $input, array $services): int
-    {
         if ($this->databaseService($services) === null) {
             $this->io->note('No database service was installed, so WordPress was not installed.');
 
             return self::SUCCESS;
         }
 
-        if ($this->runCommands(['./vendor/bin/sage-sail wp core is-installed > /dev/null 2>&1']) === 0) {
-            $this->io->success('Sage Sail is up. WordPress was already installed.');
-
-            return self::SUCCESS;
+        if (! $this->wordPressIsInstalled() && $this->installWordPress($input) !== self::SUCCESS) {
+            return self::FAILURE;
         }
 
-        $url = $this->configuredSiteUrl();
+        $this->installTheme($input);
+        $this->summarize($services);
+
+        return self::SUCCESS;
+    }
+
+    private function wordPressIsInstalled(): bool
+    {
+        return $this->runCommands(['./vendor/bin/sage-sail wp core is-installed > /dev/null 2>&1']) === 0;
+    }
+
+    private function installWordPress(InputInterface $input): int
+    {
         [$title, $user, $password, $email] = $this->gatherAdministrator($input);
 
         $installed = $this->runCommands([sprintf(
             './vendor/bin/sage-sail wp core install --url=%s --title=%s --admin_user=%s --admin_password=%s --admin_email=%s --skip-email',
-            escapeshellarg($url),
+            escapeshellarg($this->configuredSiteUrl()),
             escapeshellarg($title),
             escapeshellarg($user),
             escapeshellarg($password),
@@ -192,17 +202,114 @@ class InstallCommand extends Command
             return self::FAILURE;
         }
 
-        $this->io->success('Sage Sail is up and WordPress is installed.');
+        $this->administrator = [$user, $password];
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Install a Sage theme into the Bedrock themes directory, activate it, and build its assets.
+     */
+    private function installTheme(InputInterface $input): void
+    {
+        $theme = $this->resolveTheme($input);
+
+        if ($theme === null) {
+            return;
+        }
+
+        $path = 'web/app/themes/' . $theme;
+
+        if (is_dir($this->project->path($path))) {
+            $this->io->note(sprintf('The "%s" theme already exists and was left untouched.', $theme));
+        } elseif ($this->runCommands([sprintf(
+            './vendor/bin/sage-sail composer create-project roots/sage %s --no-interaction',
+            escapeshellarg($path)
+        )]) !== 0) {
+            $this->io->error('The Sage theme could not be installed.');
+
+            return;
+        }
+
+        if ($this->runCommands(['./vendor/bin/sage-sail wp theme activate ' . escapeshellarg($theme)]) !== 0) {
+            $this->io->error(sprintf('The "%s" theme could not be activated.', $theme));
+
+            return;
+        }
+
+        // A theme without built assets renders unstyled, so this is part of installing it...
+        if ($this->runCommands([sprintf(
+            './vendor/bin/sage-sail run bash -c %s',
+            escapeshellarg(sprintf('cd %s && npm install --no-audit --no-fund && npm run build', $path))
+        )]) !== 0) {
+            $this->io->warning(sprintf('The theme assets could not be built. Retry inside %s with "npm install && npm run build".', $path));
+        }
+
+        $this->theme = $theme;
+    }
+
+    private function resolveTheme(InputInterface $input): ?string
+    {
+        $theme = $input->getOption('theme');
+
+        if ($theme === null && $input->isInteractive()) {
+            $theme = text(
+                label: 'Name of the Sage theme to install',
+                placeholder: 'Leave empty to skip',
+                default: 'sage',
+            );
+        }
+
+        if ($theme === null || trim((string) $theme) === '') {
+            return null;
+        }
+
+        $theme = trim((string) $theme);
+
+        // The name becomes both a directory and a shell argument...
+        if (preg_match('/^[a-z0-9][a-z0-9-]*$/', $theme) !== 1) {
+            $this->io->error(sprintf('Invalid theme name [%s]. Use lowercase letters, numbers, and dashes.', $theme));
+
+            return null;
+        }
+
+        return $theme;
+    }
+
+    /**
+     * @param  array<int, string>  $services
+     */
+    private function summarize(array $services): void
+    {
+        $url = $this->configuredSiteUrl();
+
+        $this->io->success('Sage Sail is up.');
         $this->io->writeln(sprintf('  Site:  <options=bold>%s</>', $url));
-        $this->io->writeln(sprintf('  Admin: <options=bold>%s/wp/wp-admin</> (%s / %s)', $url, $user, $password));
+
+        $this->io->writeln($this->administrator === null
+            ? sprintf('  Admin: <options=bold>%s/wp/wp-admin</>', $url)
+            : sprintf('  Admin: <options=bold>%s/wp/wp-admin</> (%s / %s)', $url, $this->administrator[0], $this->administrator[1]));
+
+        if ($this->theme !== null) {
+            $this->io->writeln(sprintf('  Theme: <options=bold>%s</> (web/app/themes/%s)', $this->theme, $this->theme));
+        }
 
         if (in_array('mailpit', $services, true)) {
-            $this->io->writeln('  Mail:  <options=bold>http://localhost:8025</>');
+            $this->io->writeln(sprintf('  Mail:  <options=bold>http://localhost:%s</>', $this->mailpitPort()));
         }
 
         $this->io->newLine();
+    }
 
-        return self::SUCCESS;
+    private function mailpitPort(): string
+    {
+        $envPath = $this->project->envPath();
+
+        if ($envPath === null) {
+            return '8025';
+        }
+
+        return (new Environment($envPath))->get('FORWARD_MAILPIT_DASHBOARD_PORT') ?? '8025';
     }
 
     private function configuredSiteUrl(): string

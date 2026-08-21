@@ -46,7 +46,7 @@ jobs:
           composer require jeffersonrucu/sage-sail:* --dev -W --no-interaction
         working-directory: app
 
-      - name: Install Sage Sail and WordPress
+      - name: Install Sage Sail, WordPress and Sage
         run: |
           ./vendor/bin/sage-sail install \
             --php=${{ matrix.php }} \
@@ -55,6 +55,7 @@ jobs:
             --admin-user=admin \
             --admin-password=password \
             --admin-email=admin@example.com \
+            --theme=sage \
             --no-interaction
         working-directory: app
 
@@ -71,12 +72,8 @@ jobs:
           curl -fsS http://localhost:8025/api/v1/messages | grep -q '"total":1'
         working-directory: app
 
-      - name: Install and build a Sage theme
-        run: |
-          ./vendor/bin/sage-sail composer create-project roots/sage web/app/themes/sage --no-interaction
-          ./vendor/bin/sage-sail wp theme activate sage
-          ./vendor/bin/sage-sail acorn --version
-          ./vendor/bin/sage-sail run bash -c 'cd web/app/themes/sage && npm install --no-audit --no-fund && npm run build'
+      - name: Check the Acorn proxy answers
+        run: ./vendor/bin/sage-sail acorn --version
         working-directory: app
 
       - name: Check the Sage theme is served

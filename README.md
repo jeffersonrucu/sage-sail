@@ -17,13 +17,16 @@ outside a Bedrock project rather than writing a compose file that could not serv
 
 ## Requirements
 
-- PHP 8.2+ on the host (only to run the installer)
+- PHP 8.2+ on the host, only to run the installer
 - Docker
-- A Bedrock project
+- **An existing Roots Bedrock project.** Sage Sail does not create one
 
 ## Installation
 
-From the root of your Bedrock project:
+> **Run every command from the root of your Bedrock project** — the directory that holds
+> `composer.json`, `config/`, and `web/`. Paths, the `.env`, and the compose file are all
+> resolved from the current working directory, so `install` refuses to run anywhere it
+> cannot find `web/` and `config/application.php`.
 
 ```bash
 composer require jeffersonrucu/sage-sail --dev
@@ -51,6 +54,18 @@ can pass them:
     --no-interaction
 ```
 
+| Option | Effect |
+| --- | --- |
+| `--with=mysql,redis` | Services to install. `--with=none` installs no services |
+| `--php=8.4` | PHP version, one of `8.2`, `8.3`, `8.4`, `8.5` |
+| `--title`, `--admin-user`, `--admin-password`, `--admin-email` | WordPress administrator details |
+| `--theme=sage` | Sage theme to install into `web/app/themes`. Omitted without interaction, no theme is installed |
+| `--devcontainer` | Also write a `.devcontainer` directory |
+| `--no-build` | Do not pull or build the images |
+| `--no-start` | Do not start the containers or install WordPress |
+
+Use `--no-build --no-start` to only write the scaffolding.
+
 Re-running `install` is safe: an already installed WordPress is detected and left alone,
 and an existing theme directory is never overwritten.
 
@@ -67,17 +82,6 @@ Afterwards, work on it through the container:
 ./vendor/bin/sage-sail run bash -c 'cd web/app/themes/sage && npm run dev'
 ```
 
-| Option | Effect |
-| --- | --- |
-| `--with=mysql,redis` | Services to install. `--with=none` installs no services |
-| `--php=8.4` | PHP version, one of `8.2`, `8.3`, `8.4`, `8.5` |
-| `--title`, `--admin-user`, `--admin-password`, `--admin-email` | WordPress administrator details |
-| `--theme=sage` | Sage theme to install into `web/app/themes`. Omitted without interaction, no theme is installed |
-| `--devcontainer` | Also write a `.devcontainer` directory |
-| `--no-build` | Do not pull or build the images |
-| `--no-start` | Do not start the containers or install WordPress |
-
-Use `--no-build --no-start` to only write the scaffolding.
 
 ### Site URL
 

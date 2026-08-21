@@ -3,8 +3,17 @@
 
 $autoloaded = false;
 
-// The package may be installed as a dependency or checked out standalone...
-foreach ([__DIR__ . '/../../../autoload.php', __DIR__ . '/../vendor/autoload.php'] as $autoload) {
+/**
+ * The project's own autoloader comes first: a path repository symlinks the package, so
+ * __DIR__ then points at the checkout rather than into the project's vendor directory.
+ */
+$candidates = [
+    getcwd() . '/vendor/autoload.php',
+    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+];
+
+foreach ($candidates as $autoload) {
     if (file_exists($autoload)) {
         require $autoload;
 

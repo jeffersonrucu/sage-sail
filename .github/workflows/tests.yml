@@ -71,6 +71,17 @@ jobs:
           curl -fsS http://localhost:8025/api/v1/messages | grep -q '"total":1'
         working-directory: app
 
+      - name: Install and build a Sage theme
+        run: |
+          ./vendor/bin/sage-sail composer create-project roots/sage web/app/themes/sage --no-interaction
+          ./vendor/bin/sage-sail wp theme activate sage
+          ./vendor/bin/sage-sail acorn --version
+          ./vendor/bin/sage-sail run bash -c 'cd web/app/themes/sage && npm install --no-audit --no-fund && npm run build'
+        working-directory: app
+
+      - name: Check the Sage theme is served
+        run: curl -fsS http://localhost | grep -q "/app/themes/sage/public/build/assets/"
+
       - name: Publish the Docker files
         run: ./vendor/bin/sage-sail publish
         working-directory: app

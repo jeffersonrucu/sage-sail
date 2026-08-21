@@ -55,3 +55,30 @@ jobs:
       - name: Validate the generated compose file
         run: WWWUSER=1000 WWWGROUP=1000 docker compose config --quiet
         working-directory: app
+
+      - name: Start the containers
+        run: ./vendor/bin/sage-sail up -d --wait
+        working-directory: app
+
+      - name: Check WP-CLI
+        run: ./vendor/bin/sage-sail wp --info
+        working-directory: app
+
+      - name: Install WordPress
+        run: |
+          ./vendor/bin/sage-sail wp core install \
+            --url=http://localhost \
+            --title="Sage Sail" \
+            --admin_user=admin \
+            --admin_password=password \
+            --admin_email=admin@example.com \
+            --skip-email
+        working-directory: app
+
+      - name: Request the home page
+        run: curl -fsS --retry 5 --retry-connrefused http://localhost | grep -q "<html"
+
+      - name: Stop the containers
+        if: always()
+        run: ./vendor/bin/sage-sail down
+        working-directory: app

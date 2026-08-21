@@ -11,10 +11,6 @@ It is derived from [Laravel Sail](https://github.com/laravel/sail), adapted to t
 WordPress stack: WP-CLI and Acorn instead of Artisan, Bedrock's `web/` document root,
 and Bedrock's `.env` variable names.
 
-> **Status:** the CLI, the Compose scaffolding, and the environment configuration are in
-> place. The runtime images are still being adapted for WordPress (nginx + PHP-FPM +
-> WP-CLI), so `up` does not serve the site yet. See [Roadmap](#roadmap).
-
 ## Requirements
 
 - PHP 8.2+ on the host (only to run the installer)
@@ -43,6 +39,30 @@ Then start the containers:
 
 ```bash
 ./vendor/bin/sage-sail up -d
+```
+
+## The application container
+
+The image serves your site with **nginx** and **PHP-FPM** under supervisord, and ships
+**WP-CLI**, Composer, Node, npm, pnpm, yarn, and bun.
+
+The document root is Bedrock's `web/` directory, resolved from the `WEB_ROOT` environment
+variable that `compose.yaml` passes in. Override it if your site lives elsewhere:
+
+```yaml
+environment:
+    WEB_ROOT: /var/www/html/public
+```
+
+Nginx falls back to `index.php`, so WordPress pretty permalinks work out of the box.
+PHP-FPM runs as the `sage` user, remapped to your host UID so files written inside the
+container stay editable outside it.
+
+Xdebug is installed but off by default. Enable it by setting `SAGE_SAIL_XDEBUG_MODE` in
+your `.env`:
+
+```dotenv
+SAGE_SAIL_XDEBUG_MODE=develop,debug
 ```
 
 ## Usage
@@ -107,8 +127,8 @@ rewritten to build from there.
 ## Roadmap
 
 - [x] CLI, Compose scaffolding, and Bedrock environment configuration
-- [ ] Runtime images for WordPress: nginx + PHP-FPM + WP-CLI, serving Bedrock's `web/`
-- [ ] Integration test booting a real Bedrock site in CI
+- [x] Runtime images for WordPress: nginx + PHP-FPM + WP-CLI, serving Bedrock's `web/`
+- [x] Integration test booting a real Bedrock site in CI
 - [ ] Support for a plain WordPress layout (`wp-content/themes/<theme>`)
 
 ## Credits

@@ -7,7 +7,7 @@
  */
 
 /**
- * Bedrock loads the .env into $_ENV and $_SERVER, and only sometimes into getenv().
+ * Bedrock loads the .env into $_ENV and getenv(), depending on its adapters.
  */
 $sage_sail_env = static function (string $key): ?string {
     foreach ([$_ENV, $_SERVER] as $source) {
@@ -21,16 +21,29 @@ $sage_sail_env = static function (string $key): ?string {
     return $value === false || $value === '' ? null : $value;
 };
 
-add_action('phpmailer_init', static function ($mailer) use ($sage_sail_env): void {
-    $host = $sage_sail_env('SMTP_HOST');
+$sage_sail_host = $sage_sail_env('SMTP_HOST');
 
-    if ($host === null) {
-        return;
-    }
+// Stay inert wherever no SMTP service is configured, such as production...
+if ($sage_sail_host === null) {
+    return;
+}
 
+$sage_sail_port = (int) ($sage_sail_env('SMTP_PORT') ?? 1025);
+
+/**
+ * WordPress derives the sender from the site host, and PHPMailer rejects a domain
+ * without a dot, so mail from "localhost" fails before it is ever sent.
+ */
+add_filter('wp_mail_from', static function ($from) {
+    $domain = substr(strrchr((string) $from, '@') ?: '', 1);
+
+    return str_contains($domain, '.') ? $from : 'wordpress@sage-sail.test';
+});
+
+add_action('phpmailer_init', static function ($mailer) use ($sage_sail_host, $sage_sail_port): void {
     $mailer->isSMTP();
-    $mailer->Host = $host;
-    $mailer->Port = (int) ($sage_sail_env('SMTP_PORT') ?? 1025);
+    $mailer->Host = $sage_sail_host;
+    $mailer->Port = $sage_sail_port;
 
     // The local mail catcher accepts anything, with no credentials or encryption...
     $mailer->SMTPAuth = false;

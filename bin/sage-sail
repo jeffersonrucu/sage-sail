@@ -509,7 +509,8 @@ elif [ "$1" == "mysql" ]; then
         ARGS+=(exec)
         [ ! -t 0 ] && ARGS+=(-T)
         ARGS+=(mysql bash -c)
-        ARGS+=("MYSQL_PWD=\${MYSQL_PASSWORD} mysql -u \${MYSQL_USER} \${MYSQL_DATABASE} \${MYSQL_EXTRA_OPTIONS}")
+        # "--" makes any extra arguments land in the client's "$@" instead of bash's...
+        ARGS+=('MYSQL_PWD=${MYSQL_PASSWORD} exec mysql -u ${MYSQL_USER} ${MYSQL_DATABASE} ${MYSQL_EXTRA_OPTIONS} "$@"' --)
     else
         sage_sail_is_not_running
     fi
@@ -522,7 +523,8 @@ elif [ "$1" == "mariadb" ]; then
         ARGS+=(exec)
         [ ! -t 0 ] && ARGS+=(-T)
         ARGS+=(mariadb bash -c)
-        ARGS+=("MYSQL_PWD=\${MYSQL_PASSWORD} mariadb -u \${MYSQL_USER} \${MYSQL_DATABASE}")
+        # "--" makes any extra arguments land in the client's "$@" instead of bash's...
+        ARGS+=('MYSQL_PWD=${MYSQL_PASSWORD} exec mariadb -u ${MYSQL_USER} ${MYSQL_DATABASE} "$@"' --)
     else
         sage_sail_is_not_running
     fi

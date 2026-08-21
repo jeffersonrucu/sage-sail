@@ -70,6 +70,24 @@ installing and `WP_HOME` is written to match:
 APP_PORT=8080
 ```
 
+### Port conflicts
+
+Every service publishes a host port, so a second project already using one makes the
+containers fail to start. Remap them in `.env`:
+
+```dotenv
+APP_PORT=8087
+VITE_PORT=5174
+FORWARD_DB_PORT=3307
+FORWARD_REDIS_PORT=6380
+FORWARD_MAILPIT_PORT=1026
+FORWARD_MAILPIT_DASHBOARD_PORT=8026
+```
+
+Each service stub reads a `FORWARD_*` variable named after it. Note that `mysql` and
+`mariadb` share `FORWARD_DB_PORT`, and `minio` and `rustfs` both default to `9000`, so
+installing either pair together needs one of them remapped.
+
 ## The application container
 
 The image serves your site with **nginx** and **PHP-FPM** under supervisord, and ships

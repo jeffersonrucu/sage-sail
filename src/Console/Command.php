@@ -30,7 +30,7 @@ abstract class Command extends BaseCommand
     {
         $process = Process::fromShellCommandline(implode(' && ', $commands), $this->project->path(), null, null, null);
 
-        if (DIRECTORY_SEPARATOR !== '\\' && is_readable('/dev/tty') && is_writable('/dev/tty')) {
+        if (Process::isTtySupported()) {
             try {
                 $process->setTty(true);
             } catch (\RuntimeException $e) {

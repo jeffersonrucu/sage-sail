@@ -219,6 +219,31 @@ trait InteractsWithDockerComposeServices
         }
 
         $env->save();
+
+        if (in_array('mailpit', $services, true)) {
+            $this->installMailerPlugin();
+        }
+    }
+
+    /**
+     * WordPress has no native SMTP support, so the mail service needs a mu-plugin.
+     */
+    protected function installMailerPlugin(): void
+    {
+        $directory = $this->project->path('web/app/mu-plugins');
+        $plugin = $directory . '/sage-sail-mailer.php';
+
+        if (is_file($plugin)) {
+            $this->io->note('web/app/mu-plugins/sage-sail-mailer.php already exists and was left untouched.');
+
+            return;
+        }
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        copy($this->stubPath('mailer'), $plugin);
     }
 
     /**

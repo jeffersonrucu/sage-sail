@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * Plugin Name:  Sage Sail Mailer
+ * Description:  Routes outgoing mail through the SMTP service provided by Sage Sail.
+ * Author:       Sage Sail
+ */
+
+/**
+ * Bedrock loads the .env into $_ENV and $_SERVER, and only sometimes into getenv().
+ */
+$sage_sail_env = static function (string $key): ?string {
+    foreach ([$_ENV, $_SERVER] as $source) {
+        if (isset($source[$key]) && $source[$key] !== '') {
+            return (string) $source[$key];
+        }
+    }
+
+    $value = getenv($key);
+
+    return $value === false || $value === '' ? null : $value;
+};
+
+add_action('phpmailer_init', static function ($mailer) use ($sage_sail_env): void {
+    $host = $sage_sail_env('SMTP_HOST');
+
+    if ($host === null) {
+        return;
+    }
+
+    $mailer->isSMTP();
+    $mailer->Host = $host;
+    $mailer->Port = (int) ($sage_sail_env('SMTP_PORT') ?? 1025);
+
+    // The local mail catcher accepts anything, with no credentials or encryption...
+    $mailer->SMTPAuth = false;
+    $mailer->SMTPAutoTLS = false;
+    $mailer->SMTPSecure = '';
+});

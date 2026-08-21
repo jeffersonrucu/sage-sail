@@ -114,8 +114,17 @@ replaced in place, and commented-out ones are uncommented.
 | `rabbitmq` | `RABBITMQ_HOST`, `RABBITMQ_PORT` |
 | `soketi` | `PUSHER_HOST`, `PUSHER_PORT`, `PUSHER_SCHEME`, `PUSHER_APP_ID`, `PUSHER_APP_KEY`, `PUSHER_APP_SECRET` |
 
-Sage Sail only writes these values; wiring them into WordPress is up to your project
-configuration or plugins.
+### Mail
+
+WordPress has no native SMTP support, so selecting `mailpit` also installs
+`web/app/mu-plugins/sage-sail-mailer.php`, which points PHPMailer at the mail catcher on
+the `phpmailer_init` hook. Read the caught mail at http://localhost:8025.
+
+The plugin does nothing when `SMTP_HOST` is unset, so it is inert outside the container
+and safe to commit. An existing file is never overwritten.
+
+Every other variable above is only written to `.env` — wiring those into WordPress is up
+to your project configuration or plugins.
 
 ## Customization
 

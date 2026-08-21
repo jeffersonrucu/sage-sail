@@ -30,19 +30,44 @@ composer require jeffersonrucu/sage-sail --dev
 ./vendor/bin/sage-sail install
 ```
 
-The installer writes a `compose.yaml`, points your `.env` at the selected services, and
-generates any missing WordPress salts.
+That single command takes the project from checked out to running. It writes a
+`compose.yaml`, points your `.env` at the selected services, generates any missing
+WordPress salts, builds the images, starts the containers, and installs WordPress with
+WP-CLI. It finishes by printing your site URL and admin credentials.
 
-Pick services non-interactively with `--with`, and the PHP version with `--php`:
+You are asked for the services and the administrator details, or you can pass them:
 
 ```bash
-./vendor/bin/sage-sail install --with=mysql,redis,mailpit --php=8.4 --no-interaction
+./vendor/bin/sage-sail install \
+    --with=mysql,redis,mailpit \
+    --php=8.4 \
+    --title="My Site" \
+    --admin-user=admin \
+    --admin-password=password \
+    --admin-email=admin@example.com \
+    --no-interaction
 ```
 
-Then start the containers:
+Re-running `install` is safe: an already installed WordPress is detected and left alone.
 
-```bash
-./vendor/bin/sage-sail up -d
+| Option | Effect |
+| --- | --- |
+| `--with=mysql,redis` | Services to install. `--with=none` installs no services |
+| `--php=8.4` | PHP version, one of `8.2`, `8.3`, `8.4`, `8.5` |
+| `--title`, `--admin-user`, `--admin-password`, `--admin-email` | WordPress administrator details |
+| `--devcontainer` | Also write a `.devcontainer` directory |
+| `--no-build` | Do not pull or build the images |
+| `--no-start` | Do not start the containers or install WordPress |
+
+Use `--no-build --no-start` to only write the scaffolding.
+
+### Site URL
+
+The site is published on `APP_PORT`, which defaults to `80`. Set it in `.env` before
+installing and `WP_HOME` is written to match:
+
+```dotenv
+APP_PORT=8080
 ```
 
 ## The application container
@@ -119,6 +144,10 @@ replaced in place, and commented-out ones are uncommented.
 WordPress has no native SMTP support, so selecting `mailpit` also installs
 `web/app/mu-plugins/sage-sail-mailer.php`, which points PHPMailer at the mail catcher on
 the `phpmailer_init` hook. Read the caught mail at http://localhost:8025.
+
+It also rewrites the sender address when the site domain has no dot, since WordPress
+derives it from the site host and PHPMailer rejects `wordpress@localhost` outright.
+Addresses with a real domain are left untouched.
 
 The plugin does nothing when `SMTP_HOST` is unset, so it is inert outside the container
 and safe to commit. An existing file is never overwritten.

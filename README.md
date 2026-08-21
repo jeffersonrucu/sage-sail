@@ -11,6 +11,10 @@ It is derived from [Laravel Sail](https://github.com/laravel/sail), adapted to t
 WordPress stack: WP-CLI and Acorn instead of Artisan, Bedrock's `web/` document root,
 and Bedrock's `.env` variable names.
 
+Sage Sail targets Bedrock exclusively. A classic WordPress install, with the site at the
+project root and settings in `wp-config.php`, is out of scope: `install` refuses to run
+outside a Bedrock project rather than writing a compose file that could not serve it.
+
 ## Requirements
 
 - PHP 8.2+ on the host (only to run the installer)
@@ -47,7 +51,7 @@ The image serves your site with **nginx** and **PHP-FPM** under supervisord, and
 **WP-CLI**, Composer, Node, npm, pnpm, yarn, and bun.
 
 The document root is Bedrock's `web/` directory, resolved from the `WEB_ROOT` environment
-variable that `compose.yaml` passes in. Override it if your site lives elsewhere:
+variable that `compose.yaml` passes in. Override it if you renamed that directory:
 
 ```yaml
 environment:
@@ -123,13 +127,6 @@ To take ownership of the Docker files, publish them into your project:
 
 The runtimes and database scripts are copied to `docker/`, and `compose.yaml` is
 rewritten to build from there.
-
-## Roadmap
-
-- [x] CLI, Compose scaffolding, and Bedrock environment configuration
-- [x] Runtime images for WordPress: nginx + PHP-FPM + WP-CLI, serving Bedrock's `web/`
-- [x] Integration test booting a real Bedrock site in CI
-- [ ] Support for a plain WordPress layout (`wp-content/themes/<theme>`)
 
 ## Credits
 

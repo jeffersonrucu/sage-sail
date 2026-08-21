@@ -40,8 +40,14 @@ class InstallCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        // Anything else would produce a compose file that cannot serve the site...
         if (! $this->project->isBedrock()) {
-            $this->io->warning('This does not look like a Bedrock project. Run this command from the Bedrock root directory.');
+            $this->io->error([
+                'Sage Sail requires a Bedrock project.',
+                sprintf('No "web" directory and "config/application.php" were found in %s.', $this->project->path()),
+            ]);
+
+            return self::FAILURE;
         }
 
         $services = $this->resolveServices($input);

@@ -9,6 +9,10 @@ server {
     charset utf-8;
     client_max_body_size 100M;
 
+    # The container listens on 80 behind a published port, so absolute redirects
+    # would drop APP_PORT. Relative ones keep whatever host the browser used...
+    absolute_redirect off;
+
     access_log /dev/stdout;
     error_log /dev/stderr;
 

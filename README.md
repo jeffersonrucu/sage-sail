@@ -17,7 +17,7 @@ outside a Bedrock project rather than writing a compose file that could not serv
 
 ## Requirements
 
-- PHP 8.2+ on the host, only to run the installer
+- PHP 8.3+ on the host, only to run the installer
 - Docker
 - **An existing Roots Bedrock project.** Sage Sail does not create one
 
@@ -57,7 +57,7 @@ can pass them:
 | Option | Effect |
 | --- | --- |
 | `--with=mysql,redis` | Services to install. `--with=none` installs no services |
-| `--php=8.4` | PHP version, one of `8.2`, `8.3`, `8.4`, `8.5` |
+| `--php=8.4` | PHP version, one of `8.3`, `8.4`, `8.5` |
 | `--title`, `--admin-user`, `--admin-password`, `--admin-email` | WordPress administrator details |
 | `--theme=sage` | Sage theme to install into `web/app/themes`. Omitted without interaction, no theme is installed |
 | `--devcontainer` | Also write a `.devcontainer` directory |

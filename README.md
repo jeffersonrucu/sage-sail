@@ -185,8 +185,10 @@ It also rewrites the sender address when the site domain has no dot, since WordP
 derives it from the site host and PHPMailer rejects `wordpress@localhost` outright.
 Addresses with a real domain are left untouched.
 
-The plugin does nothing when `SMTP_HOST` is unset, so it is inert outside the container
-and safe to commit. An existing file is never overwritten.
+The plugin only runs inside the Sage Sail container: it bails out unless `SAGE_SAIL` is
+present in the environment, which `compose.yaml` injects and nothing else does. Deploying
+the file therefore changes nothing, even if the target defines `SMTP_HOST` for a real mail
+relay. An existing file is never overwritten.
 
 Every other variable above is only written to `.env` — wiring those into WordPress is up
 to your project configuration or plugins.

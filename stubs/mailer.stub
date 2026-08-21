@@ -21,9 +21,17 @@ $sage_sail_env = static function (string $key): ?string {
     return $value === false || $value === '' ? null : $value;
 };
 
+/**
+ * Compose injects SAGE_SAIL into the container, so it is absent everywhere else.
+ * Without it this file is inert, and deploying it changes nothing.
+ */
+if ($sage_sail_env('SAGE_SAIL') === null) {
+    return;
+}
+
 $sage_sail_host = $sage_sail_env('SMTP_HOST');
 
-// Stay inert wherever no SMTP service is configured, such as production...
+// No mail catcher configured, so leave the mailer alone...
 if ($sage_sail_host === null) {
     return;
 }
